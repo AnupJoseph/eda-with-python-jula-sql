@@ -6,9 +6,13 @@ using InteractiveUtils
 
 # ╔═╡ c884df20-1400-11ed-1636-e70bf0fb49b4
 begin
-	using OpenML
+	using ARFFFiles
 	using DataFrames
+	using StatsBase
 end
+
+# ╔═╡ cf1cbffb-2b2c-4729-bd0c-e678655f313b
+md"""# Exploratory Data Analysis"""
 
 # ╔═╡ ef337981-40c5-4de1-ba28-4f94f8f99481
 md"""
@@ -25,21 +29,55 @@ md"""
 Imports
 """
 
-# ╔═╡ 09c2efb7-14a5-41aa-8b4e-bc0a330485ef
-OpenML.describe_dataset(42803)
+# ╔═╡ 0a19be23-d969-4748-bc64-e6643644bdcf
+df_X = ARFFFiles.load(DataFrame, "..\\..\\datasets\\dataset.arff")
 
-# ╔═╡ e46d1017-f821-40b3-9564-d91016b14dc7
-OpenML.describe_dataset(6)
+# ╔═╡ 7008f5be-ff74-4f68-9bd6-0611a28a35c2
+md"""# 1. Structure Investigation"""
+
+# ╔═╡ 2b1d75b7-b673-4ca8-b3d3-4b88e096ebbf
+# Dataset size
+# Feels odd shouldn't this be shape?
+size(df_X)
+
+# ╔═╡ 6271e62f-7baa-42f8-b724-0e0008eea434
+# Count the number of types in the dataset
+countmap(eltype.(eachcol(df_X)))
+
+# ╔═╡ 0c8e44c8-3e1c-4fc8-81eb-ceb502bf6bbc
+md"""### 1.1 Structure of non-numerical features"""
+
+# ╔═╡ 6db3c080-921c-4cad-a168-4dc14d87ccb0
+# Display non-numerical features
+# So this is a bit weird but this how I am doing it. I selected the String and String with missing types that we know in the dataset are categories and am using that to index the dataframe
+df_X[!,names(df_X,Union{Missing, String})]
+
+# ╔═╡ 8da22dfa-34de-4fbe-82b4-8e1060221b95
+# Changes data type of 'Sex_of_Driver'
+df_X[!,:Sex_of_Driver] .= parse.(Float64,df_X[!,:Sex_of_Driver])
+
+# ╔═╡ 40456c24-2281-41da-9041-29a43ecd0f60
+# Basic description
+# Honestly DataFrames.jl describe is not the most useful thing. It calculated min and max for categorical variables for no obvious reasons and can't be bothered to give a unique count 
+describe(df_X[!,names(df_X,Union{Missing, String})])
+
+# ╔═╡ 26ca2fc1-75c8-4307-a2af-faee7449bcd2
+md"""### 1.2. Structure of numerical features"""
+
+# ╔═╡ f44be657-7621-4cff-90e0-5d741f659ad1
+unique(eachcol(df_X[!,names(df_X,Union{Missing, String})]))
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+ARFFFiles = "da404889-ca92-49ff-9e8b-0aa6b4d38dc8"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-OpenML = "8b6db2d4-7670-4922-a472-f9537c81ab66"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
+ARFFFiles = "~1.4.1"
 DataFrames = "~1.3.4"
-OpenML = "~0.2.0"
+StatsBase = "~0.33.21"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -69,6 +107,18 @@ deps = ["DataAPI", "Future", "Missings", "Printf", "Requires", "Statistics", "Un
 git-tree-sha1 = "5f5a975d996026a8dd877c35fe26a7b8179c02ba"
 uuid = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 version = "0.10.6"
+
+[[deps.ChainRulesCore]]
+deps = ["Compat", "LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "80ca332f6dcb2508adba68f22f551adb2d00a624"
+uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+version = "1.15.3"
+
+[[deps.ChangesOfVariables]]
+deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
+git-tree-sha1 = "38f7a08f19d8810338d4f5085211c7dfa5d5bdd8"
+uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
+version = "0.1.4"
 
 [[deps.Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
@@ -119,6 +169,12 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
+[[deps.DocStringExtensions]]
+deps = ["LibGit2"]
+git-tree-sha1 = "5158c2b41018c5f7eb1470d558127ac274eca0c9"
+uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+version = "0.9.1"
+
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
@@ -136,36 +192,30 @@ version = "0.4.2"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
-[[deps.HTTP]]
-deps = ["Base64", "Dates", "IniFile", "Logging", "MbedTLS", "NetworkOptions", "Sockets", "URIs"]
-git-tree-sha1 = "0fa77022fe4b511826b39c894c90daf5fce3334a"
-uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "0.9.17"
-
-[[deps.IniFile]]
-git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
-uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
-version = "0.5.1"
-
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+
+[[deps.InverseFunctions]]
+deps = ["Test"]
+git-tree-sha1 = "b3364212fb5d870f724876ffcd34dd8ec6d98918"
+uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
+version = "0.1.7"
 
 [[deps.InvertedIndices]]
 git-tree-sha1 = "bee5f1ef5bf65df56bdd2e40447590b272a5471f"
 uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
 version = "1.1.0"
 
+[[deps.IrrationalConstants]]
+git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
+uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
+version = "0.1.1"
+
 [[deps.IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
-
-[[deps.JSON]]
-deps = ["Dates", "Mmap", "Parsers", "Unicode"]
-git-tree-sha1 = "3c837543ddb02250ef42f4738347454f95079d4e"
-uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
-version = "0.21.3"
 
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -190,18 +240,18 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
+[[deps.LogExpFunctions]]
+deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
+git-tree-sha1 = "361c2b088575b07946508f135ac556751240091c"
+uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
+version = "0.3.17"
+
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[deps.Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
-
-[[deps.MbedTLS]]
-deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "Random", "Sockets"]
-git-tree-sha1 = "d9ab10da9de748859a7780338e1d6566993d1f25"
-uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.1.3"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -225,12 +275,6 @@ uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-
-[[deps.OpenML]]
-deps = ["ARFFFiles", "HTTP", "JSON", "Markdown", "Pkg"]
-git-tree-sha1 = "06080992e86a93957bfe2e12d3181443cedf2400"
-uuid = "8b6db2d4-7670-4922-a472-f9537c81ab66"
-version = "0.2.0"
 
 [[deps.OrderedCollections]]
 git-tree-sha1 = "85f8e6578bf1f9ee0d11e7bb1b1456435479d47c"
@@ -309,6 +353,18 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
+[[deps.StatsAPI]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "f9af7f195fb13589dd2e2d57fdb401717d2eb1f6"
+uuid = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
+version = "1.5.0"
+
+[[deps.StatsBase]]
+deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
+git-tree-sha1 = "d1bf48bfcc554a3761a133fe3a9bb01488e06916"
+uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+version = "0.33.21"
+
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
@@ -332,11 +388,6 @@ uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[[deps.URIs]]
-git-tree-sha1 = "e59ecc5a41b000fa94423a578d29290c7266fc10"
-uuid = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
-version = "1.4.0"
 
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
@@ -363,10 +414,19 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 """
 
 # ╔═╡ Cell order:
+# ╠═cf1cbffb-2b2c-4729-bd0c-e678655f313b
 # ╟─ef337981-40c5-4de1-ba28-4f94f8f99481
 # ╟─417ef13d-2cd4-4780-a708-6202d8f65bbf
 # ╠═c884df20-1400-11ed-1636-e70bf0fb49b4
-# ╠═09c2efb7-14a5-41aa-8b4e-bc0a330485ef
-# ╠═e46d1017-f821-40b3-9564-d91016b14dc7
+# ╠═0a19be23-d969-4748-bc64-e6643644bdcf
+# ╟─7008f5be-ff74-4f68-9bd6-0611a28a35c2
+# ╠═2b1d75b7-b673-4ca8-b3d3-4b88e096ebbf
+# ╠═6271e62f-7baa-42f8-b724-0e0008eea434
+# ╟─0c8e44c8-3e1c-4fc8-81eb-ceb502bf6bbc
+# ╠═6db3c080-921c-4cad-a168-4dc14d87ccb0
+# ╠═8da22dfa-34de-4fbe-82b4-8e1060221b95
+# ╠═40456c24-2281-41da-9041-29a43ecd0f60
+# ╟─26ca2fc1-75c8-4307-a2af-faee7449bcd2
+# ╠═f44be657-7621-4cff-90e0-5d741f659ad1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
